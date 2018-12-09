@@ -14,6 +14,8 @@ type Word struct {
 }
 
 var Period = MakeWord(".", ".")
+var QuestionMark = MakeWord(".", "?")
+var ExclamationMark = MakeWord(".", "!")
 
 func MakeWord(tag, text string) Word {
 	text = strings.ToLower(norm.NFC.String(text))
@@ -40,6 +42,14 @@ func (w Word) IsProperNoun() bool {
 	default:
 		return false
 	}
+}
+
+func (w Word) IsHashtag() bool {
+	return w.IsNoun() && len(w.Text) > 0 && w.Text[0] == '#'
+}
+
+func (w Word) IsAtMention() bool {
+	return w.IsNoun() && len(w.Text) > 0 && w.Text[0] == '@'
 }
 
 type Sentence []Word
@@ -92,6 +102,12 @@ func (s Sentence) TrimPeriod() Sentence {
 	case len(s) == 0:
 		return s
 	case s[len(s)-1] == Period:
+		// As a special case, if the token right before the period is _also_
+		// a period then we'll leave things as-is, assuming we've found an
+		// ellipsis.
+		if len(s) > 1 && s[len(s)-2] == Period {
+			return s
+		}
 		return s[:len(s)-1]
 	default:
 		return s
@@ -119,6 +135,21 @@ func (s Sentence) String() string {
 	return ret.String()
 }
 
+// StringTagged is a variant of String that includes the parts-of-speech tag
+// information, using the common word/TAG notation.
+func (s Sentence) StringTagged() string {
+	var ret strings.Builder
+	for i, w := range s {
+		if i > 0 {
+			ret.WriteByte(' ')
+		}
+		ret.WriteString(w.Text)
+		ret.WriteByte('/')
+		ret.WriteString(w.Tag)
+	}
+	return ret.String()
+}
+
 type WordSet map[Word]struct{}
 
 func (s WordSet) Has(k Word) bool {
@@ -135,6 +166,23 @@ func (s WordSet) Nouns() WordSet {
 	ret := make(WordSet)
 	for w := range s {
 		if w.IsNoun() {
+			ret.Add(w)
+		}
+	}
+	return ret
+}
+
+// Union returns the union of the receiver and all of the other given sets.
+func (s WordSet) Union(others ...WordSet) WordSet {
+	if len(s) == 0 && (len(others) == 0 || len(others[0]) == 0) {
+		return nil
+	}
+	ret := make(WordSet)
+	for w := range s {
+		ret.Add(w)
+	}
+	for _, os := range others {
+		for w := range os {
 			ret.Add(w)
 		}
 	}
