@@ -8,6 +8,7 @@ require (
 	github.com/mmcdole/gofeed v1.0.0-beta2
 	github.com/mmcdole/goxpp v0.0.0-20181012175147-0068e33feabf // indirect
 	github.com/montanaflynn/stats v0.0.0-20180911141734-db72e6cae808 // indirect
+	github.com/vmihailenco/msgpack v4.0.1+incompatible
 	golang.org/x/net v0.0.0-20181207154023-610586996380
 	golang.org/x/text v0.3.0
 	gonum.org/v1/gonum v0.0.0-20181208210948-435185761cc9 // indirect
