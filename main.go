@@ -112,6 +112,14 @@ func train(brainFile string, corpusFiles []string) int {
 			return 1
 		}
 
+		log.Printf("Sentences found: %d", len(sentences))
+		for i, sentence := range sentences {
+			if i == 5 {
+				log.Printf("- (etc...)")
+				break
+			}
+			log.Printf("- %s", sentence)
+		}
 		brain.AddSentences(sentences)
 
 		// Overwrite our initial brain file after each successful import.
