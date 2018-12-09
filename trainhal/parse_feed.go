@@ -24,6 +24,10 @@ func parseFeed(r io.Reader) ([]ghal.Sentence, error) {
 		contentR := strings.NewReader(item.Content)
 		ss, _ = parseHTMLFragment(contentR)
 		ret = append(ret, ss...)
+
+		contentR = strings.NewReader(item.Description)
+		ss, _ = parseHTMLFragment(contentR)
+		ret = append(ret, ss...)
 	}
 	return ret, nil
 }
