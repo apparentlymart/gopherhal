@@ -11,32 +11,32 @@ type Brain struct {
 
 	// wordChains is a map from each of the words this brain knows to
 	// the chains containing those words.
-	wordChains map[Word]ChainSet
+	wordChains map[Word]chainSet
 
 	// chains is a set containing all of the chains this brain knows.
-	chains ChainSet
+	chains chainSet
 
 	// wordsAfter and wordsBefore describe which words can succeed or
 	// precede (respectively) each chain.
-	wordsAfter  map[Chain]WordSet
-	wordsBefore map[Chain]WordSet
+	wordsAfter  map[chain]WordSet
+	wordsBefore map[chain]WordSet
 
 	// startChains and endChains are the chains that can start or end sentences,
 	// respectively.
-	startChains ChainSet
-	endChains   ChainSet
+	startChains chainSet
+	endChains   chainSet
 }
 
 // NewBrain allocates and returns a new, empty brain, devoid of knowledge and
 // ready to learn.
 func NewBrain() *Brain {
 	return &Brain{
-		wordChains:  make(map[Word]ChainSet),
-		chains:      make(ChainSet),
-		wordsAfter:  make(map[Chain]WordSet),
-		wordsBefore: make(map[Chain]WordSet),
-		startChains: make(ChainSet),
-		endChains:   make(ChainSet),
+		wordChains:  make(map[Word]chainSet),
+		chains:      make(chainSet),
+		wordsAfter:  make(map[chain]WordSet),
+		wordsBefore: make(map[chain]WordSet),
+		startChains: make(chainSet),
+		endChains:   make(chainSet),
 	}
 }
 
@@ -53,34 +53,34 @@ func (b *Brain) AddSentence(s Sentence) {
 
 	maxIdx := len(s) - (chainLen - 1)
 	for i := 0; i < maxIdx; i++ {
-		chain := MakeChain(s[i : i+chainLen])
-		b.chains.Add(chain)
+		chn := makeChain(s[i : i+chainLen])
+		b.chains.Add(chn)
 
-		for _, w := range chain {
+		for _, w := range chn {
 			if _, ok := b.wordChains[w]; !ok {
-				b.wordChains[w] = make(ChainSet)
+				b.wordChains[w] = make(chainSet)
 			}
-			b.wordChains[w].Add(chain)
+			b.wordChains[w].Add(chn)
 		}
 
 		if i == 0 {
-			b.startChains.Add(chain)
+			b.startChains.Add(chn)
 		} else {
 			// The previous word can precede this chain.
-			if _, ok := b.wordsBefore[chain]; !ok {
-				b.wordsBefore[chain] = make(WordSet)
+			if _, ok := b.wordsBefore[chn]; !ok {
+				b.wordsBefore[chn] = make(WordSet)
 			}
-			b.wordsBefore[chain].Add(s[i-1])
+			b.wordsBefore[chn].Add(s[i-1])
 		}
 
 		if i == (maxIdx - 1) {
-			b.endChains.Add(chain)
+			b.endChains.Add(chn)
 		} else {
 			// The following word can succeed this chain.
-			if _, ok := b.wordsAfter[chain]; !ok {
-				b.wordsAfter[chain] = make(WordSet)
+			if _, ok := b.wordsAfter[chn]; !ok {
+				b.wordsAfter[chn] = make(WordSet)
 			}
-			b.wordsAfter[chain].Add(s[i+chainLen])
+			b.wordsAfter[chn].Add(s[i+chainLen])
 		}
 	}
 }

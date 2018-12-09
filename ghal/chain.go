@@ -6,69 +6,69 @@ import (
 
 const chainLen = 4
 
-type Chain [chainLen]Word
+type chain [chainLen]Word
 
-func MakeChain(words []Word) Chain {
+func makeChain(words []Word) chain {
 	if len(words) != chainLen {
 		panic("incorrect number of words for chain")
 	}
-	var ret Chain
+	var ret chain
 	for i := range ret {
 		ret[i] = words[i]
 	}
 	return ret
 }
 
-func (c *Chain) GoString() string {
-	return fmt.Sprintf("ghal.MakeChain(%#v)", c[:])
+func (c *chain) GoString() string {
+	return fmt.Sprintf("ghal.makeChain(%#v)", c[:])
 }
 
 // PushBefore modifies the receiver in-place so that the first three words
 // are shifted along one position, the final word is lost, and the given
 // new word is placed in the first position.
-func (c *Chain) PushBefore(word Word) {
+func (c *chain) PushBefore(word Word) {
 	c[0], c[1], c[2], c[3] = word, c[0], c[1], c[2]
 }
 
 // PushAfter modifies the receiver in-place so that the last three words
 // are shifted back one position, the first word is lost, and the given
 // new word is placed in the last position.
-func (c *Chain) PushAfter(word Word) {
+func (c *chain) PushAfter(word Word) {
 	c[0], c[1], c[2], c[3] = c[1], c[2], c[3], word
 }
 
-type ChainSet map[Chain]struct{}
+type chainSet map[chain]struct{}
 
-func (s ChainSet) Has(c Chain) bool {
+func (s chainSet) Has(c chain) bool {
 	_, ok := s[c]
 	return ok
 }
 
-func (s ChainSet) Add(c Chain) {
+func (s chainSet) Add(c chain) {
 	s[c] = struct{}{}
 }
 
 // ChooseRandom will choose up to n chains pseudo-randomly from the receiving
 // set, returning a slice with n or fewer elements.
-func (s ChainSet) ChooseRandom(n int) []Chain {
-	ret := make([]Chain, n)
+func (s chainSet) ChooseRandom(n int) []chain {
+	ret := make([]chain, n)
 	return s.ChooseRandomInto(ret)
 }
 
 // ChooseOneRandom is like ChooseRandom but returns only a single chain.
 // Will panic if called on an empty set.
-func (s ChainSet) ChooseOneRandom() Chain {
+func (s chainSet) ChooseOneRandom() chain {
 	for c := range s {
 		return c
 	}
-	panic("ChooseOneRandom on empty ChainSet")
+	panic("ChooseOneRandom on empty chainSet")
 }
 
 // ChooseRandomInto is like ChooseRandom but allows the caller to provide the
 // target buffer. The length of the given slice decides the maximum number
 // to choose, and the result is a slice with the same backing array that may
 // be shorter if there were not enough items in the set to fill it.
-func (s ChainSet) ChooseRandomInto(into []Chain) []Chain {
+func (s chainSet) ChooseRandomInto(into []chain) []chain {
 	n := len(into)
 	into = into[:0]
 	i := 0
