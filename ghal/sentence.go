@@ -239,6 +239,14 @@ func (s WordSet) ChooseRandomInto(into []Word) []Word {
 }
 
 func ParseText(text string) ([]Sentence, error) {
+	// We parse all text in lowercase, because the POS tagger will use case
+	// to identify proper nouns and so if we were to provide correctly-cased
+	// text sometimes we would need to provide it every time to get consistent
+	// results. Instead, we just accept that the tagger will therefore rarely
+	// actually detect proper nouns in exchange for more consistency of tagging
+	// with conversational sentences that tend to not be capitalized.
+	text = strings.ToLower(text)
+
 	whole, err := prose.NewDocument(text)
 	if err != nil {
 		return nil, err
