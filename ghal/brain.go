@@ -130,11 +130,7 @@ func (b *Brain) MakeReply(ss ...Sentence) Sentence {
 		keywords = nouns
 	}
 	if len(keywords) == 0 {
-		keywords = allWords
-	}
-	if len(keywords) == 0 {
-		// Should never happen unless the input sentence is itself empty,
-		// which is degenerate input.
+		// If the sentence has no nouns then we don't have anything to say about it.
 		return nil
 	}
 
