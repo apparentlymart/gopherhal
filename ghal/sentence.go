@@ -1,18 +1,24 @@
 package ghal
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"strings"
 
 	"golang.org/x/text/unicode/norm"
-	"gopkg.in/jdkato/prose.v2"
+	prose "gopkg.in/jdkato/prose.v2"
 )
 
 type Word struct {
 	Tag  string
 	Text string
 }
+
+var (
+	_ json.Marshaler   = (*Word)(nil)
+	_ json.Unmarshaler = (*Word)(nil)
+)
 
 var Period = MakeWord(".", ".")
 var QuestionMark = MakeWord(".", "?")
@@ -51,6 +57,18 @@ func (w Word) IsHashtag() bool {
 
 func (w Word) IsAtMention() bool {
 	return w.IsNoun() && len(w.Text) > 0 && w.Text[0] == '@'
+}
+
+func (w Word) MarshalJSON() ([]byte, error) {
+	return json.Marshal([...]string{w.Text, w.Tag})
+}
+
+func (w *Word) UnmarshalJSON(src []byte) error {
+	var v [2]string
+	err := json.Unmarshal(src, &v)
+	w.Text = v[0]
+	w.Tag = v[1]
+	return err
 }
 
 type Sentence []Word
