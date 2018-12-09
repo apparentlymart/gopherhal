@@ -13,6 +13,9 @@ import (
 	"github.com/spf13/pflag"
 )
 
+var why = ghal.MakeWord("WRB", "why")
+var because = ghal.MakeWord("IN", "because")
+
 func main() {
 	brainFile := pflag.String("brain", "gopherhal.brain", "file to use to load/save the bot's brain")
 	debug := pflag.Bool("debug", false, "show verbose word tagging during chat")
@@ -46,6 +49,15 @@ func chat(brainFile string, debug bool) int {
 		fmt.Fprintf(os.Stderr, "Error loading brain from %q: %s\n", brainFile, err)
 		return 1
 	}
+
+	// We'll open with a question, to start the "discussion".
+	opener := brain.MakeQuestion()
+	if len(opener) > 0 {
+		fmt.Printf("hello! %s\n", opener)
+	} else {
+		fmt.Printf("hello!\n")
+	}
+
 	for {
 		inp := prompt.Input("> ", noComplete)
 		if inp == "exit" || inp == "quit" {
@@ -64,7 +76,20 @@ func chat(brainFile string, debug bool) int {
 			}
 			fmt.Printf("\n")
 		}
-		reply := brain.MakeReply(sentences...)
+
+		var reply ghal.Sentence
+
+		// If this seems to be a "why" question then we'll try to randomly
+		// select a "because..." sentence to respond with.
+		if len(sentences) > 0 && len(sentences[0]) > 0 {
+			if sentences[0][0] == why {
+				reply = brain.MakeReason()
+			}
+		}
+
+		if len(reply) == 0 {
+			reply = brain.MakeReply(sentences...)
+		}
 		if len(reply) == 0 {
 			reply = brain.MakeQuestion()
 		}

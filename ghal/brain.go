@@ -1,8 +1,14 @@
 package ghal
 
 import (
+	"math/rand"
 	"sync"
 )
+
+// continueChance is the number of times out of 256 that we'll prefer to
+// continue constructing a sentence even though we've reached a valid end
+// point.
+const continueChance = 128
 
 // Brain is the main type in this package, containing all of the state for a
 // single instance of the chatbot.
@@ -98,7 +104,7 @@ func (b *Brain) AddSentences(ss []Sentence) {
 //
 // Will return nil if no sentence can be constructed for the given keyword.
 func (b *Brain) MakeSentenceWithKeyword(w Word) Sentence {
-	return b.makeSentence(w, false)
+	return b.makeSentence(w, false, false)
 }
 
 // MakeReply takes one or more sentences and constructs a sentence in reply
@@ -197,10 +203,20 @@ func (b *Brain) MakeReply(ss ...Sentence) Sentence {
 // any sentences that terminate with a question mark.
 func (b *Brain) MakeQuestion() Sentence {
 	debugf("building a question sentence")
-	return b.makeSentence(QuestionMark, true)
+	return b.makeSentence(QuestionMark, false, true)
 }
 
-func (b *Brain) makeSentence(w Word, mustBeEnd bool) Sentence {
+// MakeReason constructs a random constructs a response question starting
+// with the word "because".
+//
+// This method can itself return a nil sentence if the brain hasn't yet seen
+// any sentences that begin with the word.
+func (b *Brain) MakeReason() Sentence {
+	debugf("building a reason sentence")
+	return b.makeSentence(QuestionMark, true, false)
+}
+
+func (b *Brain) makeSentence(w Word, mustBeStart bool, mustBeEnd bool) Sentence {
 	b.mut.RLock()
 	defer b.mut.RUnlock()
 
@@ -233,6 +249,20 @@ func (b *Brain) makeSentence(w Word, mustBeEnd bool) Sentence {
 			middleChain = c
 			break
 		}
+	} else if mustBeStart {
+		foundOne := false
+		for c := range chains {
+			if c[0] != w || !b.startChains.Has(c) {
+				continue
+			}
+			middleChain = c
+			foundOne = true
+			break
+		}
+		if !foundOne {
+			debugf("no start chains beginning with %s", w)
+			return nil
+		}
 	} else {
 		// Things are simpler if the keyword can be anywhere.
 		middleChain = chains.ChooseOneRandom()
@@ -242,7 +272,21 @@ func (b *Brain) makeSentence(w Word, mustBeEnd bool) Sentence {
 
 	// First we will work backwards to the beginning of the sentence.
 	current := middleChain
-	for !b.startChains.Has(current) {
+	for {
+		if b.startChains.Has(current) {
+			if len(b.wordsBefore[current]) > 0 {
+				// If this is both a start chain _and_ a chain with words before
+				// then we'll have a small random chance to continue growing
+				// the sentence rather than stopping here.
+				if rand.Intn(256) >= continueChance {
+					break
+				}
+			} else {
+				// otherwise we must stop
+				break
+			}
+		}
+
 		// Choose randomly one word that has preceeded this chain before,
 		// thus adding one more word to the beginning of our sentence and
 		// selecting a new chain for the next iteration.
@@ -254,7 +298,21 @@ func (b *Brain) makeSentence(w Word, mustBeEnd bool) Sentence {
 
 	// Now we'll work forwards to the end of the sentence, in the same way.
 	current = middleChain
-	for !b.endChains.Has(current) {
+	for {
+		if b.endChains.Has(current) {
+			if len(b.wordsAfter[current]) > 0 {
+				// If this is both an end chain _and_ a chain with words after
+				// then we'll have a small random chance to continue growing
+				// the sentence rather than stopping here.
+				if rand.Intn(256) >= continueChance {
+					break
+				}
+			} else {
+				// Otherwise we must stop
+				break
+			}
+		}
+
 		// Choose randomly one word that has preceeded this chain before,
 		// thus adding one more word to the beginning of our sentence and
 		// selecting a new chain for the next iteration.
