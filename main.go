@@ -20,6 +20,10 @@ func main() {
 		errUsage()
 	}
 
+	if *debug {
+		ghal.SetDebugLog(os.Stderr, "brain: ")
+	}
+
 	switch args[0] {
 	case "chat":
 		if len(args) != 1 {

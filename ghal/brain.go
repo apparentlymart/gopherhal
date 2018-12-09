@@ -138,6 +138,8 @@ func (b *Brain) MakeReply(ss ...Sentence) Sentence {
 		return nil
 	}
 
+	debugf("building replies with keywords: %s", keywords)
+
 	// We'll try to produce a sentence for each of our keywords to start,
 	// and then we'll score those sentences by how many other
 	ss = make([]Sentence, 0, len(keywords))
@@ -148,8 +150,17 @@ func (b *Brain) MakeReply(ss ...Sentence) Sentence {
 		}
 	}
 
+	if len(ss) == 0 {
+		debugf("no sentences were generated")
+		return nil
+	}
+	if len(ss) == 1 {
+		debugf("only on sentence generated, so it wins by default")
+		return ss[0]
+	}
+
 	var bestSentence Sentence
-	var bestScore int
+	bestScore := -1
 	for _, s := range ss {
 		score := 0
 		for _, w := range s {
@@ -158,18 +169,24 @@ func (b *Brain) MakeReply(ss ...Sentence) Sentence {
 			// extra priority to proper nouns, and highest priority to
 			// proper nouns from the original sentence.
 			if w.IsProperNoun() {
-				score++
-			}
-			if nouns.Has(w) { // nouns from the original sentence
 				score += 2
 			}
+			if nouns.Has(w) { // nouns from the original sentence
+				score += 3
+			}
 			if properNouns.Has(w) { // proper nouns from the original sentence
-				score += 3 // properNouns is a subset of nouns, so these really get 1 + 2 + 3 = 6 points
+				score += 4 // properNouns is a subset of nouns, so these really get 2 + 3 + 4 = 9 points
+			}
+			if allWords.Has(w) { // small credit for being in the original sentence at all
+				score++
 			}
 		}
 		if score > bestScore {
 			bestScore = score
 			bestSentence = s
+			debugf("sentence %q was assigned score %d, which is the new winner", s, score)
+		} else {
+			debugf("sentence %q was assigned score %d, which is not good enough to beat the winner", s, score)
 		}
 	}
 
@@ -183,6 +200,7 @@ func (b *Brain) MakeReply(ss ...Sentence) Sentence {
 // This method can itself return a nil sentence if the brain hasn't yet seen
 // any sentences that terminate with a question mark.
 func (b *Brain) MakeQuestion() Sentence {
+	debugf("building a question sentence")
 	return b.makeSentence(QuestionMark, true)
 }
 
@@ -190,6 +208,7 @@ func (b *Brain) makeSentence(w Word, mustBeEnd bool) Sentence {
 	b.mut.RLock()
 	defer b.mut.RUnlock()
 
+	debugf("building a sentence for keyword %s", w)
 	chains := b.wordChains[w]
 	if len(chains) == 0 {
 		// If we don't know the given word, we can't make a sentence.
@@ -223,6 +242,8 @@ func (b *Brain) makeSentence(w Word, mustBeEnd bool) Sentence {
 		middleChain = chains.ChooseOneRandom()
 	}
 
+	debugf("starting chain is %s", middleChain)
+
 	// First we will work backwards to the beginning of the sentence.
 	current := middleChain
 	for !b.startChains.Has(current) {
@@ -233,6 +254,7 @@ func (b *Brain) makeSentence(w Word, mustBeEnd bool) Sentence {
 		before = append(before, newWord)
 		current.PushBefore(newWord)
 	}
+	debugf("before words are %s", before)
 
 	// Now we'll work forwards to the end of the sentence, in the same way.
 	current = middleChain
@@ -244,6 +266,7 @@ func (b *Brain) makeSentence(w Word, mustBeEnd bool) Sentence {
 		after = append(after, newWord)
 		current.PushAfter(newWord)
 	}
+	debugf("after words are %s", after)
 
 	wordCount := len(before) + len(middleChain) + len(after)
 	ret := make(Sentence, 0, wordCount)
