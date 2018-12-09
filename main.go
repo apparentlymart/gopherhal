@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/apparentlymart/gopherhal/ghal"
+	"github.com/apparentlymart/gopherhal/trainhal"
 	prompt "github.com/c-bata/go-prompt"
 	"github.com/spf13/pflag"
 )
@@ -81,6 +83,43 @@ func chat(brainFile string, debug bool) int {
 }
 
 func train(brainFile string, corpusFiles []string) int {
+	if len(corpusFiles) == 0 {
+		os.Stderr.WriteString("Usage: gopherhal train <corpus-file>...\n")
+		return 1
+	}
+
+	brain, err := ghal.LoadBrainFile(brainFile)
+	if os.IsNotExist(err) {
+		log.Printf("Starting training with a new, empty brain")
+		brain = ghal.NewBrain()
+	} else if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading brain from %q: %s\n", brainFile, err)
+		return 1
+	}
+
+	for _, filename := range corpusFiles {
+		f, err := os.Open(filename)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to open %s: %s\n", filename, err)
+			return 1
+		}
+
+		log.Printf("Reading training content from %s...", filename)
+		log.Print("Content extraction can be slow, so larger files may take minutes to import.")
+		sentences, err := trainhal.ParseTrainingInput(f, filename, "")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to read %s: %s\n", filename, err)
+			return 1
+		}
+
+		brain.AddSentences(sentences)
+
+		// Overwrite our initial brain file after each successful import.
+		safeSaveBrain(brain, brainFile)
+	}
+
+	log.Printf("All done! Update brain saved in %s", brainFile)
+
 	return 0
 }
 
