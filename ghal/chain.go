@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-const chainLen = 3
+const chainLen = 4
 
 type chain [chainLen]Word
 
@@ -27,14 +27,14 @@ func (c *chain) GoString() string {
 // are shifted along one position, the final word is lost, and the given
 // new word is placed in the first position.
 func (c *chain) PushBefore(word Word) {
-	c[0], c[1], c[2] = word, c[0], c[1]
+	c[0], c[1], c[2], c[3] = word, c[0], c[1], c[2]
 }
 
 // PushAfter modifies the receiver in-place so that the last three words
 // are shifted back one position, the first word is lost, and the given
 // new word is placed in the last position.
 func (c *chain) PushAfter(word Word) {
-	c[0], c[1], c[2] = c[1], c[2], word
+	c[0], c[1], c[2], c[3] = c[1], c[2], c[3], word
 }
 
 type chainSet map[chain]struct{}
