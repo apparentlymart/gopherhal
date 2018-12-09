@@ -255,7 +255,86 @@ func ParseText(text string) ([]Sentence, error) {
 		for i, token := range toks {
 			sentence[i] = MakeWord(token.Tag, token.Text)
 		}
-		sentences = append(sentences, sentence)
+		sentences = append(sentences, fixupParsedSentence(sentence))
 	}
 	return sentences, nil
+}
+
+// fixupParsedSentence fixes some quirks of the tokenizer in the "prose"
+// library where it produces non-ideal results. It applies its changes
+// in-place, but returns the given sentence anyway for convenience.
+func fixupParsedSentence(s Sentence) Sentence {
+	// Despite claims in its documentation, the prose tokenizer doesn't
+	// seem to properly handle open/close quotes, so we'll try to fix these
+	// up here.
+	const (
+		double = '"'
+		single = '\''
+		open   = "``"
+		close  = "''"
+	)
+	openQuotes := map[byte]bool{
+		double: false,
+		single: false,
+	}
+
+	for i, w := range s {
+		// First we'll handle the given tags as documented, in case a
+		// future version of prose starts handling them, so we don't
+		// confuse ourselves here.
+		switch w.Tag {
+		case open:
+			switch w.Text {
+			case `"`, `“`:
+				openQuotes[double] = true
+			case `'`, `‘`:
+				openQuotes[single] = true
+			}
+			continue
+		case close:
+			switch w.Text {
+			case `"`, `”`:
+				openQuotes[double] = false
+			case `'`, `’`:
+				openQuotes[single] = false
+			}
+			continue
+		}
+
+		// If we find a quote symbol without a quote tag then we'll fix
+		// the tagging for it. Other tags around it will probably be wrong
+		// too, sadly, but at least our stringification will get the whitespace
+		// around quotes correct and we'll record the opens/closes properly
+		// in our chains.
+		switch w.Text {
+		case `"`:
+			if openQuotes[double] {
+				s[i].Tag = close
+			} else {
+				s[i].Tag = open
+			}
+			openQuotes[double] = !openQuotes[double] // toggle
+		case `'`: // this is safe because non-quote apostrophes get grouped in with other characters
+			if openQuotes[single] {
+				s[i].Tag = close
+			} else {
+				s[i].Tag = open
+			}
+			openQuotes[single] = !openQuotes[single] // toggle
+		case `“`:
+			s[i].Tag = open
+			openQuotes[double] = true
+		case `”`:
+			s[i].Tag = close
+			openQuotes[double] = false
+		case `‘`:
+			s[i].Tag = open
+			openQuotes[single] = true
+		case `’`:
+			s[i].Tag = close
+			openQuotes[single] = false
+		}
+	}
+
+	return s
 }
