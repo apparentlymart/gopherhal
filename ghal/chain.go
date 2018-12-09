@@ -2,6 +2,7 @@ package ghal
 
 import (
 	"fmt"
+	"math/rand"
 )
 
 const chainLen = 4
@@ -58,8 +59,16 @@ func (s chainSet) ChooseRandom(n int) []chain {
 // ChooseOneRandom is like ChooseRandom but returns only a single chain.
 // Will panic if called on an empty set.
 func (s chainSet) ChooseOneRandom() chain {
+	if len(s) == 0 {
+		panic("ChooseOneRandom on empty chainSet")
+	}
+	ofs := rand.Int() % len(s)
+	i := 0
 	for c := range s {
-		return c
+		if i == ofs {
+			return c
+		}
+		i++
 	}
 	panic("ChooseOneRandom on empty chainSet")
 }

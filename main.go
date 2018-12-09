@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
+	"time"
 
 	"github.com/apparentlymart/gopherhal/ghal"
 	"github.com/apparentlymart/gopherhal/trainhal"
@@ -23,6 +25,7 @@ func main() {
 	if *debug {
 		ghal.SetDebugLog(os.Stderr, "brain: ")
 	}
+	rand.Seed(time.Now().Unix())
 
 	switch args[0] {
 	case "chat":

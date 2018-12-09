@@ -2,6 +2,7 @@ package ghal
 
 import (
 	"fmt"
+	"math/rand"
 	"strings"
 
 	"golang.org/x/text/unicode/norm"
@@ -210,8 +211,16 @@ func (s WordSet) ChooseRandom(n int) []Word {
 // ChooseOneRandom is like ChooseRandom but returns only a single chain.
 // Will panic if called on an empty set.
 func (s WordSet) ChooseOneRandom() Word {
+	if len(s) == 0 {
+		panic("ChooseOneRandom on empty WordSet")
+	}
+	ofs := rand.Int() % len(s)
+	i := 0
 	for w := range s {
-		return w
+		if i == ofs {
+			return w
+		}
+		i++
 	}
 	panic("ChooseOneRandom on empty WordSet")
 }
