@@ -107,6 +107,12 @@ func (b *Brain) MakeSentenceWithKeyword(w Word) Sentence {
 	return b.makeSentence(w, false, false)
 }
 
+// MakeSentenceStartingKeyword is like MakeSentenceWithKeyword but the given
+// keyword must begin the sentence.
+func (b *Brain) MakeSentenceStartingKeyword(w Word) Sentence {
+	return b.makeSentence(w, true, false)
+}
+
 // MakeReply takes one or more sentences and constructs a sentence in reply
 // to them. This method constructs a number of candidate sentences using keywords
 // from the given sentence and then assigns each a relevance score based on
