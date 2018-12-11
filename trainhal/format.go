@@ -14,12 +14,13 @@ import (
 type fileFormat string
 
 const (
-	formatUnknown  fileFormat = ""
-	formatFeed     fileFormat = "feed"
-	formatHTML     fileFormat = "html"
-	formatMarkdown fileFormat = "md"
-	formatPlain    fileFormat = "txt"
-	formatMegaHAL  fileFormat = "mhtrn"
+	formatUnknown   fileFormat = ""
+	formatFeed      fileFormat = "feed"
+	formatHTML      fileFormat = "html"
+	formatMarkdown  fileFormat = "md"
+	formatPlain     fileFormat = "txt"
+	formatMegaHAL   fileFormat = "mhtrn"
+	formatJSONUtter fileFormat = "jsonu"
 )
 
 // selectFormat tries to determine a file format and suggested character
@@ -97,6 +98,8 @@ func selectFormatFromFilename(filename string) fileFormat {
 		// Assume the MegaHAL training input file format, which is line-oriented
 		// input with support for comments.
 		return formatMegaHAL
+	case ".jsonutter":
+		return formatJSONUtter
 	default:
 		return formatUnknown
 	}
@@ -114,6 +117,8 @@ func parseSource(r io.Reader, format fileFormat, maybeEnc encoding.Encoding) ([]
 		return parsePlain(r, maybeEnc)
 	case formatMegaHAL:
 		return parseMegaHALTraining(r)
+	case formatJSONUtter:
+		return parseJSONUtter(r)
 	default:
 		return nil, fmt.Errorf("unknown file format")
 	}
